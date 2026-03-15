@@ -16,5 +16,99 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  cases Case[]
+
   @@map("users")
 }
+
+model Case {
+  id              String    @id @default(uuid())
+  ownerId         String?
+  sessionToken    String?
+  caseName        String    @default("")
+  foreignerName   String    @default("")
+  companyName     String    @default("")
+  visaType        String
+  visaSubtype     String?
+  applicationType String?
+  status          String    @default("draft")
+  manualFields    Json      @default("{}")
+  deletedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner             User?              @relation(fields: [ownerId], references: [id])
+  documents         CaseDocument[]
+  shareLinks        ShareLink[]
+  @@index([ownerId])
+  @@index([sessionToken])
+  @@index([status])
+  @@index([visaType])
+  @@index([createdAt])
+  @@index([ownerId, status])
+  @@map("cases")
+}
+
+model ShareLink {
+  id        String    @id @default(uuid())
+  caseId    String
+  token     String    @unique @default(uuid())
+  type      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  isActive  Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@map("share_links")
+}
+
+model CaseDocument {
+  id        String  @id @default(uuid())
+  caseId    String
+  typeId    String
+  direction String  // "input" | "output"
+  status    String  @default("pending")
+  isCustom Boolean @default(false)
+
+  customLabel    String?
+  customCategory String?
+
+  ocrResult    Json?
+  aiContent    String?
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  case  Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  files DocumentFile[]
+
+  @@index([caseId])
+  @@index([caseId, typeId])
+  @@index([status])
+  @@map("case_documents")
+}
+
+model DocumentFile {
+  id          String @id @default(uuid())
+  documentId  String
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  storagePath String
+  version     Int    @default(1)
+
+  createdAt DateTime @default(now())
+
+  document CaseDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_files")
+}
+
+
