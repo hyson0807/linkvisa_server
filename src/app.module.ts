@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { CasesModule } from './cases/cases.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StorageModule } from './storage/storage.module';
+import { ShareLinksModule } from './share-links/share-links.module';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 
 @Module({
@@ -15,12 +16,13 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
     CasesModule,
     DocumentsModule,
     StorageModule,
+    ShareLinksModule,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(CsrfMiddleware)
-      .forRoutes('auth/*path', 'cases/*path', 'cases');
+      .forRoutes('auth/*path', 'cases/*path', 'cases', 'share-links/*path');
   }
 }

@@ -48,7 +48,7 @@ export class CasesController {
     @CurrentUser('id') userId: string | null,
     @Req() req: Request,
   ) {
-    const caseRecord = await this.casesService.findOne(id);
+    const caseRecord = await this.casesService.findOne(id, { includeShareLinks: true });
     this.casesService.assertAccess(caseRecord, userId, getSessionTokenFromReq(req));
     return caseRecord;
   }

@@ -47,10 +47,13 @@ export class CasesService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, options?: { includeShareLinks?: boolean }) {
     const caseRecord = await this.prisma.case.findUnique({
       where: { id },
-      include: { documents: { include: { files: true } } },
+      include: {
+        documents: { include: { files: true } },
+        ...(options?.includeShareLinks && { shareLinks: true }),
+      },
     });
     if (!caseRecord || caseRecord.deletedAt) {
       throw new NotFoundException('케이스를 찾을 수 없습니다');
