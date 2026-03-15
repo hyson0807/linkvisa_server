@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -16,6 +18,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { SESSION_TOKEN_HEADER } from '../common/constants';
 import { CasesService } from '../cases/cases.service';
 import { DocumentsService } from './documents.service';
+import { UpdateDocumentDto } from './dto/update-document.dto';
 
 function getSessionTokenFromReq(req: Request): string | null {
   return (req.headers[SESSION_TOKEN_HEADER] as string) ?? null;
@@ -72,6 +75,41 @@ export class DocumentsController {
   ) {
     await this.assertAccess(caseId, userId, req);
     return this.documentsService.getFileUrl(caseId, docId, fileId);
+  }
+
+  @Delete(':docId/files/:fileId')
+  async deleteFile(
+    @Param('caseId') caseId: string,
+    @Param('docId') docId: string,
+    @Param('fileId') fileId: string,
+    @CurrentUser('id') userId: string | null,
+    @Req() req: Request,
+  ) {
+    await this.assertAccess(caseId, userId, req);
+    await this.documentsService.deleteFile(caseId, docId, fileId);
+  }
+
+  @Delete(':docId')
+  async deleteDocument(
+    @Param('caseId') caseId: string,
+    @Param('docId') docId: string,
+    @CurrentUser('id') userId: string | null,
+    @Req() req: Request,
+  ) {
+    await this.assertAccess(caseId, userId, req);
+    await this.documentsService.deleteDocument(caseId, docId);
+  }
+
+  @Patch(':docId')
+  async updateDocument(
+    @Param('caseId') caseId: string,
+    @Param('docId') docId: string,
+    @Body() body: UpdateDocumentDto,
+    @CurrentUser('id') userId: string | null,
+    @Req() req: Request,
+  ) {
+    await this.assertAccess(caseId, userId, req);
+    return this.documentsService.updateDocument(caseId, docId, body);
   }
 
   @Post()

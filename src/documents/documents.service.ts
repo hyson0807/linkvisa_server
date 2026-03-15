@@ -11,6 +11,19 @@ export class DocumentsService {
     private storage: StorageService,
   ) {}
 
+  private async findDocOrFail(
+    caseId: string,
+    docId: string,
+    include?: { files: boolean },
+  ) {
+    const doc = await this.prisma.caseDocument.findFirst({
+      where: { id: docId, caseId },
+      ...(include && { include }),
+    });
+    if (!doc) throw new NotFoundException('서류를 찾을 수 없습니다');
+    return doc;
+  }
+
   async uploadFile(
     caseId: string,
     docId: string,
@@ -21,23 +34,24 @@ export class DocumentsService {
     }
 
     const [doc, lastFile] = await Promise.all([
-      this.prisma.caseDocument.findFirst({ where: { id: docId, caseId } }),
+      this.findDocOrFail(caseId, docId),
       this.prisma.documentFile.findFirst({
         where: { documentId: docId },
         orderBy: { version: 'desc' },
       }),
     ]);
-    if (!doc) throw new NotFoundException('서류를 찾을 수 없습니다');
 
     const version = (lastFile?.version ?? 0) + 1;
-    const storagePath = `cases/${caseId}/${docId}/${version}/${file.originalname}`;
+    // Multer decodes originalname as Latin-1; re-decode as UTF-8 to preserve Korean filenames
+    const fileName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const storagePath = `cases/${caseId}/${docId}/${version}/${fileName}`;
     await this.storage.upload(file.buffer, storagePath, file.mimetype);
 
     const [fileRecord] = await Promise.all([
       this.prisma.documentFile.create({
         data: {
           documentId: docId,
-          fileName: file.originalname,
+          fileName,
           fileSize: file.size,
           mimeType: file.mimetype,
           storagePath,
@@ -54,11 +68,7 @@ export class DocumentsService {
   }
 
   async getFiles(caseId: string, docId: string) {
-    const doc = await this.prisma.caseDocument.findFirst({
-      where: { id: docId, caseId },
-    });
-    if (!doc) throw new NotFoundException('서류를 찾을 수 없습니다');
-
+    await this.findDocOrFail(caseId, docId);
     return this.prisma.documentFile.findMany({
       where: { documentId: docId },
       orderBy: { version: 'desc' },
@@ -73,6 +83,55 @@ export class DocumentsService {
 
     const url = await this.storage.getSignedDownloadUrl(file.storagePath);
     return { url };
+  }
+
+  async deleteFile(caseId: string, docId: string, fileId: string) {
+    await this.findDocOrFail(caseId, docId);
+    const file = await this.prisma.documentFile.findFirst({
+      where: { id: fileId, documentId: docId },
+    });
+    if (!file) throw new NotFoundException('파일을 찾을 수 없습니다');
+
+    await this.storage.delete(file.storagePath).catch(() => {});
+    await this.prisma.documentFile.delete({ where: { id: fileId } });
+
+    // If no files remain, reset document status to pending
+    const remaining = await this.prisma.documentFile.count({
+      where: { documentId: docId },
+    });
+    if (remaining === 0) {
+      await this.prisma.caseDocument.update({
+        where: { id: docId },
+        data: { status: 'pending' },
+      });
+    }
+  }
+
+  async deleteDocument(caseId: string, docId: string) {
+    const doc = await this.findDocOrFail(caseId, docId, { files: true });
+
+    // Delete files from storage (parallel, best-effort)
+    const files = (doc as typeof doc & { files: { storagePath: string }[] }).files;
+    await Promise.all(
+      files.map((f) => this.storage.delete(f.storagePath).catch(() => {})),
+    );
+
+    await this.prisma.caseDocument.delete({ where: { id: docId } });
+  }
+
+  async updateDocument(
+    caseId: string,
+    docId: string,
+    data: { label?: string },
+  ) {
+    await this.findDocOrFail(caseId, docId);
+    return this.prisma.caseDocument.update({
+      where: { id: docId },
+      data: {
+        ...(data.label !== undefined && { customLabel: data.label }),
+      },
+      include: { files: true },
+    });
   }
 
   async addCustomDocument(

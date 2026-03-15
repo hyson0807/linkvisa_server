@@ -30,6 +30,8 @@ export class CasesService {
             typeId: d.id,
             direction: d.direction,
             status: 'pending',
+            customLabel: d.label,
+            customCategory: d.category,
           })),
         },
       },
