@@ -95,6 +95,8 @@ export class ShareLinksService {
         typeId: doc.typeId,
         status: doc.status,
         customLabel: doc.customLabel,
+        isCustom: doc.isCustom,
+        customCategory: doc.customCategory,
         files: doc.files.map((f) => ({
           id: f.id,
           fileName: f.fileName,

@@ -23,6 +23,6 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(CsrfMiddleware)
-      .forRoutes('auth/*path', 'cases/*path', 'cases', 'share-links/*path');
+      .forRoutes('auth/*path', 'cases/*path', 'cases');
   }
 }
