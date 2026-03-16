@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { OcrService } from '../ocr/ocr.service';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
@@ -9,6 +10,7 @@ export class DocumentsService {
   constructor(
     private prisma: PrismaService,
     private storage: StorageService,
+    private ocrService: OcrService,
   ) {}
 
   private async findDocOrFail(
@@ -132,6 +134,36 @@ export class DocumentsService {
       },
       include: { files: true },
     });
+  }
+
+  async runOcr(
+    caseId: string,
+    docId: string,
+  ): Promise<Record<string, string>> {
+    const [, file] = await Promise.all([
+      this.findDocOrFail(caseId, docId),
+      this.prisma.documentFile.findFirst({
+        where: { documentId: docId },
+        orderBy: { version: 'desc' },
+      }),
+    ]);
+    if (!file) throw new NotFoundException('업로드된 파일이 없습니다');
+
+    const result = await this.ocrService.processDocument(
+      file.storagePath,
+      file.mimeType,
+    );
+
+    // Save OCR result and update status
+    await this.prisma.caseDocument.update({
+      where: { id: docId },
+      data: {
+        ocrResult: result,
+        status: 'ocr-complete',
+      },
+    });
+
+    return result;
   }
 
   async addCustomDocument(

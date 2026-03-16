@@ -10,6 +10,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
@@ -27,6 +29,8 @@ function getSessionTokenFromReq(req: Request): string | null {
 @Controller('cases/:caseId/documents')
 @UseGuards(OptionalJwtAccessGuard)
 export class DocumentsController {
+  private readonly logger = new Logger(DocumentsController.name);
+
   constructor(
     private documentsService: DocumentsService,
     private casesService: CasesService,
@@ -110,6 +114,25 @@ export class DocumentsController {
   ) {
     await this.assertAccess(caseId, userId, req);
     return this.documentsService.updateDocument(caseId, docId, body);
+  }
+
+  @Post(':docId/ocr')
+  async runOcr(
+    @Param('caseId') caseId: string,
+    @Param('docId') docId: string,
+    @CurrentUser('id') userId: string | null,
+    @Req() req: Request,
+  ) {
+    await this.assertAccess(caseId, userId, req);
+    try {
+      const result = await this.documentsService.runOcr(caseId, docId);
+      return { result };
+    } catch (error) {
+      this.logger.error(`OCR failed for doc ${docId}:`, error);
+      throw new InternalServerErrorException(
+        `OCR 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   @Post()
