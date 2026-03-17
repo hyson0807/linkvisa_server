@@ -8,7 +8,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 /** Expected OCR field names per document type — keeps Gemini output keys stable */
 const OCR_FIELD_HINTS: Record<string, string[]> = {
   passport: ['성명(영문)', '성별', '생년월일', '국적', '여권번호', '여권발급일', '여권만료일'],
-  alien_registration: ['성명', '외국인등록번호', '체류자격', '체류기간'],
+  alien_registration: ['성명', '외국인등록번호', '성별', '생년월일', '국적', '체류자격', '체류기간'],
   diploma: ['성명', '학교명', '학위', '전공', '졸업일자'],
   graduation_cert: ['성명', '학교명', '학위', '전공', '졸업일자'],
   business_reg: ['상호', '대표자', '사업자등록번호', '사업장소재지', '업태', '종목'],
