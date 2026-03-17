@@ -23,17 +23,22 @@ export class OcrService {
   async processDocument(
     storagePath: string,
     mimeType: string,
+    fieldHints?: string[],
   ): Promise<Record<string, string>> {
     this.logger.log(`Downloading file: ${storagePath}`);
     const buffer = await this.storageService.getObjectBuffer(storagePath);
     const base64 = buffer.toString('base64');
     this.logger.log(`File downloaded: ${buffer.length} bytes`);
 
+    const fieldHintLine = fieldHints?.length
+      ? `\n반드시 다음 키 이름을 정확히 사용하세요: ${fieldHints.map((f) => `"${f}"`).join(', ')}. 이 외에 추가 정보가 있으면 적절한 한국어 키로 추가하세요.`
+      : '';
+
     const prompt = `이 한국 비자/행정 서류 이미지를 분석하여 모든 주요 정보를 추출하세요.
 문서에 포함된 이름, 번호, 날짜, 주소, 기관명 등 모든 핵심 항목을 빠짐없이 추출하세요.
 반드시 flat한 JSON 객체로만 응답하세요. 중첩 객체나 배열 없이, 키는 한국어 필드명, 값은 문자열입니다.
 표 형태의 데이터는 "항목1_필드명" 형식으로 풀어서 작성하세요.
-필드값을 찾을 수 없으면 해당 키를 생략하세요.`;
+필드값을 찾을 수 없으면 해당 키를 생략하세요.${fieldHintLine}`;
 
     const inlineData = { data: base64, mimeType };
 
