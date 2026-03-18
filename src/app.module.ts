@@ -6,6 +6,7 @@ import { CasesModule } from './cases/cases.module';
 import { DocumentsModule } from './documents/documents.module';
 import { StorageModule } from './storage/storage.module';
 import { ShareLinksModule } from './share-links/share-links.module';
+import { AiGenerateModule } from './ai-generate/ai-generate.module';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 
 @Module({
@@ -17,6 +18,7 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
     DocumentsModule,
     StorageModule,
     ShareLinksModule,
+    AiGenerateModule,
   ],
 })
 export class AppModule implements NestModule {
