@@ -10,8 +10,13 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  const clientUrls = configService
+    .get('CLIENT_URL', 'http://localhost:3000')
+    .split(',')
+    .map((url: string) => url.trim());
+
   app.enableCors({
-    origin: configService.get('CLIENT_URL', 'http://localhost:3000'),
+    origin: clientUrls,
     credentials: true,
   });
 

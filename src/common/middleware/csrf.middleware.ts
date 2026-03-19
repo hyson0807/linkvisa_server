@@ -8,10 +8,13 @@ import { Request, Response, NextFunction } from 'express';
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
-  private readonly clientUrl: string;
+  private readonly clientUrls: string[];
 
   constructor(configService: ConfigService) {
-    this.clientUrl = configService.get('CLIENT_URL', 'http://localhost:3000');
+    this.clientUrls = configService
+      .get('CLIENT_URL', 'http://localhost:3000')
+      .split(',')
+      .map((url: string) => url.trim());
   }
 
   use(req: Request, _res: Response, next: NextFunction) {
@@ -25,7 +28,7 @@ export class CsrfMiddleware implements NestMiddleware {
     }
 
     const origin = req.headers['origin'];
-    if (origin && origin !== this.clientUrl) {
+    if (origin && !this.clientUrls.includes(origin)) {
       throw new ForbiddenException('허용되지 않은 Origin입니다');
     }
 
