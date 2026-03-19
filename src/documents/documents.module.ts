@@ -5,12 +5,14 @@ import { DocumentsService } from './documents.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { StorageModule } from '../storage/storage.module';
 import { CasesModule } from '../cases/cases.module';
+import { OcrModule } from '../ocr/ocr.module';
 
 @Module({
   imports: [
     PrismaModule,
     StorageModule,
     CasesModule,
+    OcrModule,
     MulterModule.register({ storage: undefined }), // memory storage
   ],
   controllers: [DocumentsController],

@@ -51,6 +51,28 @@ export class StorageService {
     return getSignedUrl(this.s3, command, { expiresIn });
   }
 
+  async getObjectBuffer(key: string): Promise<Buffer> {
+    const result = await this.s3.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
+    if (!result.Body) {
+      throw new Error(`Empty response body for key: ${key}`);
+    }
+    // transformToByteArray is provided by @aws-sdk/client-s3 SdkStreamMixin
+    if (typeof result.Body.transformToByteArray === 'function') {
+      return Buffer.from(await result.Body.transformToByteArray());
+    }
+    // Fallback: collect readable stream chunks
+    const chunks: Buffer[] = [];
+    for await (const chunk of result.Body as AsyncIterable<Uint8Array>) {
+      chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  }
+
   async delete(key: string): Promise<void> {
     await this.s3.send(
       new DeleteObjectCommand({

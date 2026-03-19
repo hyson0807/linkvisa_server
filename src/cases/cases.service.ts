@@ -112,12 +112,7 @@ export class CasesService {
     sessionToken: string | null,
   ) {
     if (userId && caseRecord.ownerId === userId) return;
-    if (
-      !userId &&
-      sessionToken &&
-      caseRecord.sessionToken === sessionToken
-    )
-      return;
+    if (sessionToken && caseRecord.sessionToken === sessionToken) return;
     throw new ForbiddenException('이 케이스에 접근할 수 없습니다');
   }
 }
